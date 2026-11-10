@@ -56,6 +56,7 @@ li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;b
  <div id="wrap"><canvas id="view" width="320" height="240"></canvas><canvas id="ov" width="320" height="240"></canvas></div>
  <div id="banner">Chưa bắt đầu</div><div class="mu" id="finfo"></div>
  <div class="row"><button id="bScanFace">Quét để mở</button><button class="g" id="bRegFace">Đăng ký mặt</button></div>
+ <button class="g" id="bFlip">Ảnh bị ngược? Xoay 180 độ</button>
  <div id="pinBox" hidden><input id="pin" type="password" inputmode="numeric" placeholder="Mã PIN quản trị"><button style="width:100%;margin-top:8px" id="bPin">Xác nhận PIN</button></div>
  <div id="regBox" hidden><div class="mu" id="regHelp">Nhìn vào camera. Trang tự chụp 5 mẫu, mỗi lần nghiêng đầu nhẹ.</div><div class="bar" style="margin:8px 0"><i id="prog"></i></div>
   <div id="nameBox" hidden><input id="nm" placeholder="Tên người"><button class="o" style="width:100%;margin-top:8px" id="bSave">Lưu gương mặt</button></div></div>
@@ -188,6 +189,7 @@ function startRegFace(){if(!(cli&&cli.connected)){banner('Cần đăng nhập In
  if(!pinOk){camOff();$('pinBox').hidden=false;$('regBox').hidden=true;banner('Nhập mã PIN quản trị','warn');return}beginReg()}
 async function beginReg(){if(!await loadModels())return;fmode='reg';samples=[];$('prog').style.width='0';$('nameBox').hidden=true;$('regBox').hidden=false;$('pinBox').hidden=true;
  $('regHelp').textContent='Nhìn vào camera. Trang tự chụp 5 mẫu, mỗi lần nghiêng đầu nhẹ.';banner('Nhìn vào camera để đăng ký','warn');camOn()}
+$('bFlip').onclick=()=>{if(!(cli&&cli.connected)){banner('Cần đăng nhập Internet','bad');return}send('FLIP',false);banner('Đã gửi lệnh xoay ảnh')};
 $('bScanFace').onclick=startScanFace;$('bRegFace').onclick=startRegFace;
 $('bPin').onclick=()=>{const p=$('pin').value;if(!p)return;pinOk=p;beginReg()};  // PIN duoc ESP32 kiem tra khi luu
 $('bSave').onclick=()=>{const n=$('nm').value.trim();if(!n){banner('Nhập tên trước khi lưu','bad');return}
