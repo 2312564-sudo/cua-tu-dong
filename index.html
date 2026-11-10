@@ -15,7 +15,7 @@ button{font:inherit;font-size:16px;font-weight:600;border:0;border-radius:12px;p
 button:active{transform:scale(.97)}button:disabled{opacity:.4}
 .o{background:var(--ok)}.c{background:var(--bad)}.g{background:#666}.r{background:var(--bad)}
 .st{display:flex;align-items:center;gap:8px}.dot{width:10px;height:10px;border-radius:50%;background:var(--mu);flex:none}
-.on .dot{background:var(--ok)}.off .dot{background:var(--bad)}
+.on .dot{background:var(--ok)}.off .dot{background:var(--bad)}.try .dot{background:var(--warn)}
 input{font:inherit;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tabs button{padding:11px;font-size:14px;background:var(--card);color:var(--fg);border:1px solid var(--line)}
 .tabs button.sel{background:var(--ac);color:#fff;border-color:var(--ac)}
@@ -63,7 +63,7 @@ li{display:flex;justify-content:space-between;align-items:center;padding:8px 0;b
  <div class="lbl">Đã đăng ký</div><ul id="list"><li class="mu">Đăng nhập để xem</li></ul>
  <div class="mu">Quét mặt cần Internet. Ảnh 320x240, 1 ảnh mỗi giây, chỉ gửi khi đang quét.</div></section>
 
-<section id="pWifi" class="card" hidden><div class="lbl">WiFi của ESP32</div><div id="wifiNow" class="mu">Chưa rõ</div>
+<section id="pWifi" class="card" hidden><div class="lbl">WiFi của ESP32</div><div class="st off" id="wifiNow"><span class="dot"></span><span>Không có kết nối</span></div>
  <button id="bScanWifi" disabled>Quét WiFi xung quanh ESP32</button><div id="nets" class="mu"></div>
  <input id="ssid" placeholder="Tên WiFi"><input id="wpass" type="password" placeholder="Mật khẩu WiFi">
  <button class="o" id="bSendWifi" disabled>Gửi WiFi cho ESP32</button><div class="mu">ESP32 chỉ dùng được WiFi 2.4 GHz.</div></section>
@@ -115,7 +115,7 @@ function onMqtt(t,m){
 function showEsp(door,ssid,ip,online){
  set('sEsp',online,online?('ESP32 online, WiFi "'+ssid+'"'+(ip?' ('+ip+')':'')):'ESP32 offline qua Internet (mất điện hoặc mất mạng)');
  $('dst').textContent=(online||bleOn())?(names[door]||door||'?'):'Không rõ';
- $('wifiNow').textContent=ssid?(ip?('Đang nối "'+ssid+'", IP '+ip):('Đã lưu "'+ssid+'" nhưng chưa vào được')):'Chưa cài WiFi nhà';
+ wifiStatus(ssid,ip);
  checkWifi(!!ip,ssid,ip)}
 
 // ===================== Ket noi Bluetooth =====================
@@ -158,10 +158,15 @@ $('bScanWifi').onclick=async()=>{$('bScanWifi').disabled=true;$('nets').textCont
  if(bleOn()&&bScan){await send('SCAN');await new Promise(r=>{bleScanWait=r;setTimeout(r,8000)});bleScanWait=null;
   const txt=new TextDecoder().decode(await bScan.readValue());showNets(txt.split('\n').filter(x=>x).map(l=>{const[s,r,k]=l.split('\t');return{s,r:+r,k:k==='1'}}))}};
 let wantSsid='',wantUntil=0;
+// Trang thai WiFi cua ESP32: da ket noi / dang thu ket noi / khong co ket noi
+function wifiStatus(ssid,ip){const e=$('wifiNow');
+ if(ip&&ssid&&(!wantSsid||ssid===wantSsid)){e.className='st on';e.lastElementChild.textContent='Đã kết nối "'+ssid+'" (IP '+ip+')'}
+ else if(wantSsid||ssid){e.className='st try';e.lastElementChild.textContent='Đang thử kết nối "'+(wantSsid||ssid)+'"...'}
+ else{e.className='st off';e.lastElementChild.textContent='Không có kết nối'}}
 function checkWifi(sta,ssid,ip){if(!wantSsid)return;if(sta&&ssid===wantSsid){popup('Kết nối thành công','ESP32 đã vào WiFi "'+ssid+'" (IP '+ip+').');wantSsid=''}}
 setInterval(()=>{if(wantSsid&&Date.now()>wantUntil){popup('Chưa kết nối được','ESP32 không vào được WiFi "'+wantSsid+'" sau 40 giây. Kiểm tra mật khẩu, hoặc mạng phải là 2.4 GHz.');wantSsid=''}},2000);
 $('bSendWifi').onclick=async()=>{const s=$('ssid').value.trim();if(!s){log('Chọn hoặc nhập tên WiFi');return}
- const w=await send('WIFI:'+s+'|'+$('wpass').value);$('wpass').value='';if(w){wantSsid=s;wantUntil=Date.now()+40000;log('Đã gửi WiFi "'+s+'" qua '+(w==='net'?'Internet':'Bluetooth'))}};
+ const w=await send('WIFI:'+s+'|'+$('wpass').value);$('wpass').value='';if(w){wantSsid=s;wantUntil=Date.now()+40000;wifiStatus('','');log('Đã gửi WiFi "'+s+'" qua '+(w==='net'?'Internet':'Bluetooth'))}};
 
 // ===================== Quet mat (anh camera qua Internet) =====================
 const view=$('view'),vc=view.getContext('2d',{willReadFrequently:true}),ov=$('ov'),oc=ov.getContext('2d');
